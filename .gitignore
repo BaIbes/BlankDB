@@ -1,3 +1,6 @@
-tests
+tests/
 ToDO
+build/
+*.
 main.py
+_deps/

@@ -1,2 +1,0 @@
-C:/Users/apchhui/Documents/cycle/products/DataBase/build/CMakeFiles/edit_cache.dir
-C:/Users/apchhui/Documents/cycle/products/DataBase/build/CMakeFiles/rebuild_cache.dir
