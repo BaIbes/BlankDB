@@ -2,6 +2,7 @@
 #include "../include/blankdb/StorageManager.hpp"
 #include "../include/blankdb/IndexManager.hpp"
 #include "../include/blankdb/utils/Logger.hpp"
+#include "../include/blankdb/utils/Error.hpp"
 
 namespace blankdb {
 class Database::Impl {
@@ -12,17 +13,16 @@ public:
           logger(Logger::get_instance()),
           transaction_active(false) {}
 
-    StorageManager storage;
-    IndexManager indexer;
-    Logger& logger;
-    bool transaction_active = false;
-
-    // Ensure proper cleanup
     ~Impl() {
         if (storage.is_connected()) {
             storage.disconnect();
         }
     }
+
+    StorageManager storage;
+    IndexManager indexer;
+    Logger& logger;
+    bool transaction_active = false;
 };
 
 Database::Database(const std::string& db_path)
@@ -30,32 +30,13 @@ Database::Database(const std::string& db_path)
 
 Database::~Database() = default;
 
-void Database::open() {
-    if (!impl_->storage.is_connected()) {
-        impl_->storage.connect();
-        impl_->logger.log("Database opened: " + impl_->storage.get_path());
-    }
-}
-
-void Database::close() {
-    if (impl_->transaction_active) {
-        rollback();
-    }
-    impl_->storage.disconnect();
-    impl_->logger.log("Database closed");
-}
-
-bool Database::is_open() const noexcept {
-    return impl_->storage.is_connected();
-}
-
 void Database::create_table(
     const std::string& table_name,
     const std::unordered_map<std::string, std::string>& schema) {
     begin_transaction();
     try {
         impl_->storage.create_table(table_name, schema);
-        impl_->indexer.register_table(table_name);
+        impl_->indexer.register_table(table_name); // Register the table for indexing
         commit();
     } catch (const StorageException& e) {
         impl_->logger.error("Table creation failed: " + std::string(e.what()));
@@ -100,4 +81,4 @@ void Database::rollback() {
         impl_->transaction_active = false;
     }
 }
-} // namespace blankdb
+}
