@@ -1,4 +1,3 @@
-// Logger.hpp
 #ifndef BLANKDB_LOGGER_HPP
 #define BLANKDB_LOGGER_HPP
 
@@ -11,6 +10,7 @@
 #include <ctime>
 
 namespace blankdb {
+
 class Logger {
 public:
     // Log levels
@@ -22,7 +22,7 @@ public:
 
     // Singleton accessor
     static Logger& get_instance();
-    
+
     void info(const std::string& message);
     void error(const std::string& message);
     void debug(const std::string& message);
@@ -43,10 +43,15 @@ private:
 
     // Member variables
     static std::unique_ptr<Logger> instance_; // Static pointer to the singleton instance
+
+    // Allow std::unique_ptr to call the private destructor
+    friend std::default_delete<Logger>;
+
     std::string log_file_path_;
     std::ofstream log_file_;
     std::mutex log_mutex_; // Ensures thread-safe logging
 };
+
 } // namespace blankdb
 
-#endif
+#endif // BLANKDB_LOGGER_HPP

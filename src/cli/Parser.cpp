@@ -1,109 +1,93 @@
-// src/cli/Parser.cpp
-
 #include "../../include/blankdb/cli/Parser.hpp"
 #include <sstream>
-#include <algorithm>
-#include <cctype>
 
 namespace blankdb {
 namespace cli {
 
-std::unique_ptr<Command> Parser::parse(const std::string& input) {
-    auto type = determine_command_type(input);
+std::string Command::to_query_string() const {
     switch (type) {
-        case Command::Type::CREATE_TABLE:
-            return parse_create_table(input);
-        case Command::Type::INSERT:
-            return parse_insert(input);
-        case Command::Type::SELECT:
-            return parse_select(input);
+        case Type::CREATE_TABLE: {
+            std::ostringstream oss;
+            oss << "CREATE TABLE " << table_name << " (";
+            for (const auto& [key, value] : data) {
+                oss << key << ":" << value << ", ";
+            }
+            oss.seekp(-2, std::ios_base::end); // Убираем запятую в конце
+            oss << ")";
+            return oss.str();
+        }
+        case Type::INSERT: {
+            std::ostringstream oss;
+            oss << "INSERT INTO " << table_name << " (";
+            for (const auto& [key, value] : data) {
+                oss << key << "=" << value << ", ";
+            }
+            oss.seekp(-2, std::ios_base::end); // Убираем запятую в конце
+            oss << ")";
+            return oss.str();
+        }
+        case Type::SELECT: {
+            std::ostringstream oss;
+            oss << "SELECT ";
+            if (!columns.empty()) {
+                for (const auto& col : columns) {
+                    oss << col << ", ";
+                }
+                oss.seekp(-2, std::ios_base::end); // Убираем запятую в конце
+            } else {
+                oss << "*";
+            }
+            oss << " FROM " << table_name;
+            return oss.str();
+        }
         default:
-            return std::make_unique<Command>();
+            return "";
     }
 }
 
-Command::Type Parser::determine_command_type(const std::string& input) {
-    std::istringstream iss(input);
-    std::string command;
-
-    iss >> command;
-    if (command == "CREATE") return Command::Type::CREATE_TABLE;
-    if (command == "INSERT") return Command::Type::INSERT;
-    if (command == "SELECT") return Command::Type::SELECT;
-    return Command::Type::UNKNOWN;
-}
-
-std::unique_ptr<Command> Parser::parse_create_table(const std::string& input) {
+Command Parser::parse(const std::string& input) {
+    Command cmd;
     std::istringstream iss(input);
     std::string token;
-    Command cmd;
-    cmd.type = Command::Type::CREATE_TABLE;
 
-    // Пропускаем "CREATE TABLE"
-    iss >> token >> token >> cmd.table_name;
-
-    // Собираем схему таблицы
-    std::unordered_map<std::string, std::string> schema;
-    while (iss >> token) {
-        size_t pos = token.find(':');
-        if (pos != std::string::npos) {
-            std::string column_name = token.substr(0, pos);
-            std::string column_type = token.substr(pos + 1);
-            schema[column_name] = column_type;
+    iss >> token;
+    if (token == "CREATE") {
+        iss >> token;
+        if (token == "TABLE") {
+            cmd.type = Command::Type::CREATE_TABLE;
+            iss >> cmd.table_name;
+            while (iss >> token) {
+                size_t pos = token.find(':');
+                if (pos != std::string::npos) {
+                    std::string column_name = token.substr(0, pos);
+                    std::string column_type = token.substr(pos + 1);
+                    cmd.data[column_name] = column_type;
+                }
+            }
+        }
+    } else if (token == "INSERT") {
+        cmd.type = Command::Type::INSERT;
+        iss.ignore(); // Пропускаем "INTO"
+        iss >> cmd.table_name;
+        while (iss >> token) {
+            size_t pos = token.find('=');
+            if (pos != std::string::npos) {
+                std::string key = token.substr(0, pos);
+                std::string value = token.substr(pos + 1);
+                cmd.data[key] = value;
+            }
+        }
+    } else if (token == "SELECT") {
+        cmd.type = Command::Type::SELECT;
+        while (iss >> token && token != "FROM") {
+            cmd.columns.push_back(token);
+        }
+        if (token == "FROM") {
+            iss >> cmd.table_name;
         }
     }
 
-    cmd.data = schema;
-    return std::make_unique<Command>(cmd);
-}
-
-std::unique_ptr<Command> Parser::parse_insert(const std::string& input) {
-    std::istringstream iss(input);
-    std::string token;
-    Command cmd;
-    cmd.type = Command::Type::INSERT;
-
-    // Пропускаем "INSERT INTO"
-    iss >> token >> token >> cmd.table_name;
-
-    // Собираем данные для вставки
-    std::unordered_map<std::string, std::string> data;
-    while (iss >> token) {
-        size_t pos = token.find('=');
-        if (pos != std::string::npos) {
-            std::string key = token.substr(0, pos);
-            std::string value = token.substr(pos + 1);
-            data[key] = value;
-        }
-    }
-
-    cmd.data = data;
-    return std::make_unique<Command>(cmd);
-}
-
-std::unique_ptr<Command> Parser::parse_select(const std::string& input) {
-    std::istringstream iss(input);
-    std::string token;
-    Command cmd;
-    cmd.type = Command::Type::SELECT;
-
-    // Пропускаем "SELECT"
-    iss >> token;
-
-    // Собираем список колонок
-    std::vector<std::string> columns;
-    while (iss >> token && token != "FROM") {
-        columns.push_back(token);
-    }
-
-    // Пропускаем "FROM"
-    iss >> token;
-
-    // Получаем имя таблицы
-    iss >> cmd.table_name;
-
-    cmd.columns = columns;
-    return std::make_unique<Command>(cmd);
+    return cmd;
 }
 
 } // namespace cli

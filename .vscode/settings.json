@@ -70,6 +70,10 @@
         "sstream": "cpp",
         "stop_token": "cpp",
         "thread": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "regex": "cpp",
+        "any": "cpp",
+        "bitset": "cpp",
+        "ranges": "cpp"
     }
 }

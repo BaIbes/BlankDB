@@ -20,7 +20,6 @@ target_include_directories(BlankDB PUBLIC
 target_link_libraries(BlankDB PRIVATE
     nlohmann_json::nlohmann_json
 )
-
 # Добавление исполняемого файла для демонстрации
 add_executable(BlankDBSample samples/basic_usage.cpp)
 target_link_libraries(BlankDBSample PRIVATE BlankDB)

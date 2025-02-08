@@ -1,5 +1,3 @@
-// src/cli/Interface.cpp
-
 #include "../../include/blankdb/cli/Interface.hpp"
 #include <iostream>
 
@@ -14,8 +12,7 @@ void Interface::run() {
             std::cout << "Exiting..." << std::endl;
             break;
         }
-        // Здесь можно добавить обработку команд
-        std::cout << "Command received: " << command << std::endl;
+        process_input(command);
     }
 }
 
@@ -25,8 +22,14 @@ std::string Interface::get_command() {
     return command;
 }
 
+// Метод теперь доступен публично
 void Interface::display_prompt() {
     std::cout << "> ";
+}
+
+void Interface::process_input(const std::string& input) {
+    // Здесь можно добавить обработку команд
+    std::cout << "Command received: " << input << std::endl;
 }
 
 } // namespace cli

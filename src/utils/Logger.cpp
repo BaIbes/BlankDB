@@ -4,6 +4,7 @@
 #include <iomanip>
 
 namespace blankdb {
+
 // Define and initialize the static instance pointer
 std::unique_ptr<Logger> Logger::instance_;
 
@@ -16,7 +17,11 @@ Logger& Logger::get_instance() {
 }
 
 Logger::Logger(const std::string& log_file_path)
-    : log_file_path_(log_file_path), log_file_(log_file_path, std::ios::app) {}
+    : log_file_path_(log_file_path), log_file_(log_file_path, std::ios::app) {
+    if (!log_file_.is_open()) {
+        std::cerr << "Error: Unable to open log file '" << log_file_path_ << "'." << std::endl;
+    }
+}
 
 Logger::~Logger() {
     if (log_file_.is_open()) {
@@ -49,8 +54,12 @@ void Logger::log(const std::string& message, Level level) {
 
     // Write to file
     if (log_file_.is_open()) {
-        log_file_ << formatted_message << std::endl;
-        log_file_.flush(); // Ensure data is written immediately
+        try {
+            log_file_ << formatted_message << std::endl;
+            log_file_.flush(); // Ensure data is written immediately
+        } catch (const std::exception& e) {
+            std::cerr << "Error writing to log file: " << e.what() << std::endl;
+        }
     }
 }
 
@@ -59,8 +68,14 @@ std::string Logger::format_message(const std::string& message, Level level) cons
     // Get current timestamp
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
-    std::tm local_time;
-    localtime_s(&local_time, &time_t); // Use localtime_s for thread safety
+
+    // Use std::localtime with thread-safe approach
+    std::tm local_time {};
+#ifdef _MSC_VER
+    localtime_s(&local_time, &time_t); // For MSVC
+#else
+    local_time = *std::localtime(&time_t); // For other compilers
+#endif
 
     // Format timestamp
     std::ostringstream oss;
@@ -77,4 +92,5 @@ std::string Logger::format_message(const std::string& message, Level level) cons
     // Combine all parts into the final log message
     return "[" + oss.str() + "] [" + level_str + "] " + message;
 }
+
 } // namespace blankdb
