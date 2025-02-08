@@ -3,47 +3,53 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector> // Для std::vector
 #include <memory>
 #include <stdexcept>
 
 namespace blankdb {
+
+// Forward declaration of StorageManager
 class StorageManager;
 
 class IndexManager {
 public:
     explicit IndexManager(StorageManager& storage);
 
-    // Register a table for potential indexing
+    // Регистрация таблицы для индексирования
     void register_table(const std::string& table_name);
 
-    // Create an index on a column of a table
+    // Создание индекса на столбце таблицы
     void create_index(const std::string& table_name, const std::string& column_name);
 
-    // Drop an index on a column of a table
+    // Удаление индекса на столбце таблицы
     void drop_index(const std::string& table_name, const std::string& column_name);
 
-    // Update indexes when a record is inserted
+    // Обновление индексов при вставке записи
     void update_indexes(
         const std::string& table_name,
         uint64_t record_id,
         const std::unordered_map<std::string, std::string>& record_data);
 
-    // Query records using an index
+    // Запрос записей по индексу
     std::vector<uint64_t> query_by_index(
         const std::string& table_name,
         const std::string& column_name,
         const std::string& value) const;
 
 private:
+    // Структура для хранения индекса
     struct Index {
-        std::unordered_map<std::string, std::vector<uint64_t>> data;
+        std::unordered_map<std::string, std::vector<uint64_t>> data; // Ключ: значение столбца, Значение: список ID записей
     };
 
-    StorageManager& storage_;
-    std::unordered_map<std::string, std::unordered_map<std::string, Index>> indexes_;
+    StorageManager& storage_; // Ссылка на StorageManager
+    std::unordered_map<std::string, std::unordered_map<std::string, Index>> indexes_; // Индексы для таблиц
 
+    // Проверка существования индекса
     bool has_index(const std::string& table_name, const std::string& column_name) const;
 };
+
 } // namespace blankdb
 
-#endif
+#endif // BLANKDB_INDEX_MANAGER_HPP
