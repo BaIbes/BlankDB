@@ -1,5 +1,6 @@
 #include "../../include/blankdb/index/BTreeNode.hpp"
 #include <algorithm>
+#include <stdexcept>
 
 namespace btree {
 template <typename KeyType, typename ValueType>

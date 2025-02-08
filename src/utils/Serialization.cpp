@@ -1,4 +1,5 @@
 #include "../../include/blankdb/utils/Serialization.hpp"
+#include <nlohmann/json.hpp>
 
 namespace btree {
 template <typename KeyType, typename ValueType>
@@ -25,7 +26,8 @@ std::shared_ptr<BTreeNode<KeyType, ValueType>> deserialize(const nlohmann::json&
 
     if (!json_node["is_leaf"]) {
         for (const auto& child_json : json_node["children"]) {
-            node->children_.push_back(deserialize(child_json, t));
+            // Явно указываем шаблонные параметры
+            node->children_.push_back(deserialize<KeyType, ValueType>(child_json, t));
         }
     }
 
